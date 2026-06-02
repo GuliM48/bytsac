@@ -123,4 +123,15 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Subscription Alerts
+    |--------------------------------------------------------------------------
+    |
+    | Días de anticipación para enviar alertas de vencimiento.
+    |
+    */
+
+    'suscripcion_alerta_dias' => env('SUSCRIPCION_ALERTA_DIAS', 7),
+
 ];

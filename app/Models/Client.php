@@ -5,10 +5,12 @@ namespace App\Models;
 use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Notifications\Notifiable;
 
 class Client extends Model
 {
-    use BelongsToTenant;
+    use BelongsToTenant, Notifiable;
 
     protected $fillable = [
         'tenant_id',
@@ -33,9 +35,9 @@ class Client extends Model
         return $this->belongsTo(User::class, 'id_usuario_creador');
     }
 
-    // public function subscriptions(): HasMany
-    // {
-    //     return $this->hasMany(Subscription::class);
-    // }
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(Subscription::class);
+    }
 }
 
