@@ -2,7 +2,7 @@
 
 namespace App\Notifications;
 
-use App\Mail\SuscripcionPorVencer;
+use App\Mail\AvisoComercialMailable;
 use App\Models\Subscription;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
@@ -23,9 +23,9 @@ class AvisoComercial extends Notification
         return ['mail', 'database'];
     }
 
-    public function toMail(object $notifiable): SuscripcionPorVencer
+    public function toMail(object $notifiable): AvisoComercialMailable
     {
-        return (new SuscripcionPorVencer($this->subscription))
+        return (new AvisoComercialMailable($this->subscription))
             ->to($notifiable->email);
     }
 
