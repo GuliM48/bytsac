@@ -208,4 +208,133 @@ class SubscriptionControllerTest extends TestCase
         // El registro debe permanecer intacto en la base de datos
         $this->assertDatabaseHas('subscriptions', ['id' => $subscriptionAjena->id]);
     }
+    public function test_un_comercial_puede_listar_y_ver_suscripciones(): void
+    {
+        $comercial = User::factory()->create(['tenant_id' => 1]);
+        $comercial->assignRole('comercial');
+
+        Subscription::factory()->create([
+            'tenant_id' => 1,
+            'client_id' => $this->client->id,
+            'plan_id' => $this->plan->id,
+        ]);
+
+        $response = $this->actingAs($comercial, 'sanctum')
+            ->getJson('/api/subscriptions');
+
+        $response->assertStatus(200)
+            ->assertJsonCount(1, 'data');
+    }
+
+    public function test_un_comercial_puede_crear_una_suscripcion(): void
+    {
+        $comercial = User::factory()->create(['tenant_id' => 1]);
+        $comercial->assignRole('comercial');
+
+        $response = $this->actingAs($comercial, 'sanctum')
+            ->postJson('/api/subscriptions', [
+                'client_id' => $this->client->id,
+                'plan_id' => $this->plan->id,
+                'fecha_inicio' => '2026-01-01',
+                'fecha_fin' => '2026-12-31',
+                'estado' => 'activo',
+                'renovacion_automatica' => true,
+            ]);
+
+        $response->assertStatus(201);
+    }
+
+    public function test_un_comercial_puede_ejecutar_acciones_de_renovacion_y_toggle(): void
+    {
+        $comercial = User::factory()->create(['tenant_id' => 1]);
+        $comercial->assignRole('comercial');
+
+        $subscription = Subscription::factory()->create([
+            'tenant_id' => 1,
+            'client_id' => $this->client->id,
+            'plan_id' => $this->plan->id,
+            'renovacion_automatica' => false,
+        ]);
+
+        // Probar Toggle Auto-Renew
+        $this->actingAs($comercial, 'sanctum')
+            ->patchJson("/api/subscriptions/{$subscription->id}/toggle-auto-renew")
+            ->assertStatus(200);
+
+        // Probar Renovación
+        $this->actingAs($comercial, 'sanctum')
+            ->postJson("/api/subscriptions/{$subscription->id}/renew")
+            ->assertStatus(200);
+    }
+
+    public function test_un_comercial_no_puede_eliminar_una_suscripcion(): void
+    {
+        $comercial = User::factory()->create(['tenant_id' => 1]);
+        $comercial->assignRole('comercial');
+
+        $subscription = Subscription::factory()->create([
+            'tenant_id' => 1,
+            'client_id' => $this->client->id,
+            'plan_id' => $this->plan->id,
+        ]);
+
+        $response = $this->actingAs($comercial, 'sanctum')
+            ->deleteJson("/api/subscriptions/{$subscription->id}");
+
+        // El Comercial recibe un 403 Forbidden al intentar borrar
+        $response->assertStatus(403);
+        
+        // El registro debe seguir intacto en la base de datos
+        $this->assertDatabaseHas('subscriptions', ['id' => $subscription->id]);
+    }
+    public function test_un_cliente_no_puede_listar_suscripciones(): void
+    {
+        $clienteUsuario = User::factory()->create(['tenant_id' => 1]);
+        $clienteUsuario->assignRole('cliente');
+
+        $response = $this->actingAs($clienteUsuario, 'sanctum')
+            ->getJson('/api/subscriptions');
+
+        $response->assertStatus(403);
+    }
+
+    public function test_un_cliente_no_puede_modificar_ni_alternar_renovaciones(): void
+    {
+        $clienteUsuario = User::factory()->create(['tenant_id' => 1]);
+        $clienteUsuario->assignRole('cliente');
+
+        $subscription = Subscription::factory()->create([
+            'tenant_id' => 1,
+            'client_id' => $this->client->id,
+            'plan_id' => $this->plan->id,
+        ]);
+
+        // Intentar alternar renovación
+        $this->actingAs($clienteUsuario, 'sanctum')
+            ->patchJson("/api/subscriptions/{$subscription->id}/toggle-auto-renew")
+            ->assertStatus(403);
+
+        // Intentar renovar
+        $this->actingAs($clienteUsuario, 'sanctum')
+            ->postJson("/api/subscriptions/{$subscription->id}/renew")
+            ->assertStatus(403);
+    }
+
+    public function test_un_cliente_no_puede_eliminar_una_suscripcion(): void
+    {
+        $clienteUsuario = User::factory()->create(['tenant_id' => 1]);
+        $clienteUsuario->assignRole('cliente');
+
+        $subscription = Subscription::factory()->create([
+            'tenant_id' => 1,
+            'client_id' => $this->client->id,
+            'plan_id' => $this->plan->id,
+        ]);
+
+        $response = $this->actingAs($clienteUsuario, 'sanctum')
+            ->deleteJson("/api/subscriptions/{$subscription->id}");
+
+        $response->assertStatus(403);
+        $this->assertDatabaseHas('subscriptions', ['id' => $subscription->id]);
+    }
 }
