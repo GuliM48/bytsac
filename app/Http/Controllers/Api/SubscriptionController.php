@@ -155,8 +155,11 @@ class SubscriptionController extends Controller
             return response()->json(['message' => 'Error al cancelar la suscripción', 'error' => $e->getMessage()], 500);
         }
     }
-    public function destroy(Subscription $subscription): JsonResponse
+    public function destroy($id): JsonResponse
     {
+        // Busca el registro sin el TenantScope automático
+        $subscription = Subscription::withoutGlobalScopes()->findOrFail($id);
+        
         // 1. Ejecuta la validación de la Policy (Spatie + Tenant ID check)
         $this->authorize('delete', $subscription);
 
